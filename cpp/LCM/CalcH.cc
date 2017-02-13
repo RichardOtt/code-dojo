@@ -460,10 +460,22 @@ void CalcH::calculate_vLCM()
         int mw_i = galIndices[galaxy_index(i)].mw;
         int other_i = galIndices[galaxy_index(i)].other;
         //LCM error func (v_gal/gal)
-       //	vLCM(i) =c*c*((1.-1./other->n(other_i))/(1.-1./milky->n(mw_i)))*((1.-1./other->n(other_i))/(1.-1./milky->n(mw_i)))*(((other->vlum_f()/c)+((other->vlum_f()/c)*(other->vlum_f()/c))-(0.5)*(other->phi_f()-milky->phi_f()))/(2.0+(other->vlum_f()/c)+((other->vlum_f()/c)*(other->vlum_f()/c))+(0.5)*(other->phi_f()-milky->phi_f())))*(((sqrt((1.+other->vlum(other_i)*overc)/(1.-other->vlum(other_i)*overc)))+(other->n(other_i)/milky->n(mw_i)))/((sqrt((1.+other->vlum(other_i)*overc)/(1.-other->vlum(other_i)*overc)))-(other->n(other_i)/milky->n(mw_i))))*((2/(other->n(other_i)/milky->n(mw_i)+1/other->n(other_i)/milky->n(mw_i)))-1);/
-//good FUNC
-//	vLCM(i) =c*c*((1.-1./other->n(other_i))/(1.-1./milky->n(mw_i)))*((1.-1./other->n(other_i))/(1.-1./milky->n(mw_i)))*(((other->vlum_f()/c)+((other->vlum_f()/c)*(other->vlum_f()/c))-(0.5)*(other->phi_f()-milky->phi_f()))/(2.0+(other->vlum_f()/c)+((other->vlum_f()/c)*(other->vlum_f()/c))+(0.5)*(other->phi_f()-milky->phi_f())))*(((sqrt((1.+other->vlum(other_i)*overc)/(1.-other->vlum(other_i)*overc)))+(other->n(other_i)/milky->n(mw_i)))/((sqrt((1.+other->vlum(other_i)*overc)/(1.-other->vlum(other_i)*overc)))-(other->n(other_i)/milky->n(mw_i))))*((2/(other->n(other_i)/milky->n(mw_i)+milky->n(mw_i)/other->n(other_i)))-1);
-		vLCM(i) =c*c*((1.-1./other->n(other_i))/(1.-1./milky->n(mw_i)))*((1.-1./other->n(other_i))/(1.-1./milky->n(mw_i)))*(((sqrt((1.+other->vlum(other_i)*overc)/(1.-other->vlum(other_i)*overc)))+(other->n(other_i)/milky->n(mw_i)))/((sqrt((1.+other->vlum(other_i)*overc)/(1.-other->vlum(other_i)*overc)))-(other->n(other_i)/milky->n(mw_i))))*((2/(other->n(other_i)/milky->n(mw_i)+milky->n(mw_i)/other->n(other_i)))-1);
+	//This is the current version as of 2017/2/11
+	//vLCM(i) =c*c*((1.-1./other->n(other_i))/(1.-1./milky->n(mw_i)))*((1.-1./other->n(other_i))/(1.-1./milky->n(mw_i)))*(((sqrt((1.+other->vlum(other_i)*overc)/(1.-other->vlum(other_i)*overc)))+(other->n(other_i)/milky->n(mw_i)))/((sqrt((1.+other->vlum(other_i)*overc)/(1.-other->vlum(other_i)*overc)))-(other->n(other_i)/milky->n(mw_i))))*((2/(other->n(other_i)/milky->n(mw_i)+milky->n(mw_i)/other->n(other_i)))-1);
+	//rott - 2017/2/11 - refactoring to be more readable and stable
+	//first, define w = n - 1   for computational stability
+	//Note that the final value can differ from the vLCM(i) above by
+	//about one part in 10000, this is because the new f_i is more
+	//numerically stable
+	double w_gal = other->n(other_i) - 1;
+	double w_mw = milky->n(mw_i) - 1;
+	double kappa_i = (w_gal/w_mw) * (w_mw + 1) / (w_gal + 1);
+	double a_i = kappa_i * kappa_i;
+	//d_i may still have problems, need to investigate more
+	double d_i = (((sqrt((1.+other->vlum(other_i)*overc)/(1.-other->vlum(other_i)*overc)))+(other->n(other_i)/milky->n(mw_i)))/((sqrt((1.+other->vlum(other_i)*overc)/(1.-other->vlum(other_i)*overc)))-(other->n(other_i)/milky->n(mw_i))));
+	double f_i = -(w_gal - w_mw)*(w_gal - w_mw) / ((w_gal+1)*(w_gal+1) + (w_mw+1)*(w_mw+1));
+	double vLCM_new = c*c*a_i*d_i*f_i;
+
         //remember: these guys must be calling the correct galaxy index or they mismatch.
  // (((other->n(other_i)/milky->n(mw_i)) - 1./(other->n(other_i)/milky->n(mw_i)))/((other->n(other_i)/milky->n(mw_i)) + 1./(other->n(other_i)/milky->n(mw_i))));
      cout <<other->r(other_i)<< "   "<<other->vlum(other_i)<< endl;
